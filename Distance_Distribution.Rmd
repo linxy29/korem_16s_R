@@ -1,0 +1,122 @@
+---
+title: "Distribution of distance between 16s copies"
+author: "Xinyi Lin"
+date: "1/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+## Import Data
+
+```{r}
+rrnDB_16s_num <- read.delim("D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6.tsv")
+NCBI_16s_post <- read.csv("D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6_16s_position.csv")
+#summary(rrnDB_16s_num)
+#summary(NCBI_16s_post)
+```
+
+## Filter NCBI part
+
+```{r}
+length(unique(NCBI_16s_post$record_id))/15829
+# 98.41% records' positions are avaliable
+```
+
+## distance distribution
+
+```{r}
+NCBI_16s_dist =
+  NCBI_16s_post %>% 
+  arrange(record_id, start) %>% 
+  mutate(len = end-start) %>% 
+  group_by(record_id, chromosome) %>% 
+  mutate(distance = c(0,diff(start))) %>% 
+  ungroup() %>% 
+  filter(distance>0)
+summary(NCBI_16s_dist$distance)
+```
+
+```{r}
+boxplot(NCBI_16s_dist$distance)
+
+NCBI_16s_dist %>% 
+  filter(distance < 900000) %>%      # filter an outlier
+  ggplot(aes(distance)) +
+  geom_histogram() +
+  xlab("Absolute Distance")
+
+NCBI_16s_dist %>% 
+  filter(distance < 900000) %>% 
+  ggplot(aes(x = distance, y=..scaled..)) +
+  geom_density() +
+  xlab("Absolute Distance") +
+  ylab("Density")
+
+quantile(NCBI_16s_dist$distance) %>% round(3)
+```
+
+## Get file of NCBI assembly accession
+
+```{r, eval=FALSE}
+NCBI_dist_len = length(unique(NCBI_16s_dist$record_id))
+write.table(unique(NCBI_16s_dist$record_id)[1:3500], file = "D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6_16s_NCBIaa1.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(unique(NCBI_16s_dist$record_id)[3501:7000], file = "D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6_16s_NCBIaa2.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(unique(NCBI_16s_dist$record_id)[7001:10500], file = "D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6_16s_NCBIaa3.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(unique(NCBI_16s_dist$record_id)[10501:NCBI_dist_len], file = "D:/Codes/korem_16s/Data/rrnDB/rrnDB-5.6_16s_NCBIaa4.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+## Relative Distance
+
+```{r}
+Total_length <- read.csv("D:/Codes/korem_16s/Data/total_length_comb.csv")
+```
+
+```{r}
+GCA_16s_dist = NCBI_16s_dist %>% 
+  filter(str_detect(record_id,"^GCA"))
+GCF_16s_dist = NCBI_16s_dist %>% 
+  filter(str_detect(record_id,"^GCF"))
+```
+
+```{r}
+merge_GCA = merge(GCA_16s_dist,Total_length,by.x = "record_id", by.y = "GenBank.assembly.accession") %>% 
+  select(-RefSeq.assembly.accession)
+merge_GCF = merge(GCF_16s_dist,Total_length,by.x = "record_id", by.y = "RefSeq.assembly.accession") %>% 
+  select(-GenBank.assembly.accession)
+```
+
+```{r}
+NCBI_rela_dist = rbind(merge_GCA, merge_GCF) %>% 
+  select(record_id, organism_name, distance, total.length) %>% 
+  mutate(rela_dist = distance/total.length,
+         fin_rela_dist = ifelse(rela_dist<=0.5, rela_dist, 1-rela_dist))
+```
+
+```{r}
+boxplot(NCBI_rela_dist$rela_dist)
+NCBI_rela_dist %>% 
+  ggplot(aes(fin_rela_dist)) +
+  geom_histogram()+
+  xlab("Relative Distance")
+NCBI_rela_dist %>% 
+  ggplot(aes(x = fin_rela_dist, y = ..scaled..)) +
+  geom_density()+
+  xlab("Relative Distance")+
+  ylab("Density")
+```
+
+```{r}
+quantile(NCBI_rela_dist$rela_dist) %>% round(3)
+```
+
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```
+
