@@ -1,0 +1,141 @@
+---
+title: "Distribution of v1-v4 difference"
+author: "Xinyi Lin"
+date: "2/6/2020"
+output: html_document
+---
+
+```{r,warning=FALSE,message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+```
+
+```{r}
+pairAlign_res <- read.csv("D:/Codes/korem_16s/Data/pairwise_alig_res.csv")
+head(pairAlign_res,15)
+```
+
+## Find the copies combination with largest difference
+
+record_id: NCBI assembly accession
+copies: combination of 16s copies used for pairwise sequence alignment
+distance: distance between start points of copies
+v1v2_diff: numbers of different sites between two copies in v1/v2 region
+v3v4_diff: numbers of different sites between two copies in v3/v4 region
+max: this combination shows largest different sites number in which region
+
+```{r}
+max_v1v2 = pairAlign_res %>% 
+  group_by(record_id) %>% 
+  filter(v1v2_diff == max(v1v2_diff)) %>% 
+  mutate(max = "v1v2") %>% 
+  ungroup()
+max_v3v4 = pairAlign_res %>% 
+  group_by(record_id) %>% 
+  filter(v3v4_diff == max(v3v4_diff)) %>% 
+  mutate(max = "v3v4") %>% 
+  ungroup()
+max_pairAlign_res = rbind(max_v1v2,max_v3v4) %>% 
+  arrange(record_id)
+max_pairAlign_res %>% 
+  head(15)
+```
+
+```{r}
+write.table(max_pairAlign_res, file = "D:/Codes/korem_16s/Data/max_pairAlign_res.txt", append = FALSE, quote = FALSE, row.names = FALSE)
+```
+
+## Draw distribution of difference
+
+### v1v2 region
+
+For distance larger than 150kbp:
+
+```{r,message=FALSE}
+pairAlign_res$v1v2_diff %>% summary()
+pairAlign_res$v3v4_diff %>% summary()
+pairAlign_res %>% 
+  group_by(v1v2_diff) %>% 
+  summarize(n = n())
+small_10 = pairAlign_res %>% 
+  filter(v1v2_diff<=10) %>% 
+  ggplot(aes(v1v2_diff)) +
+  geom_histogram() + 
+  scale_x_continuous(breaks=seq(0, 10, 1)) +
+  xlab("v1v2 difference(0-10)")
+larg_10 = pairAlign_res %>% 
+  filter(v1v2_diff>10) %>% 
+  ggplot(aes(v1v2_diff)) +
+  geom_histogram() +
+  xlab("v1v2 difference(10+)")
+small_10 + larg_10
+```
+
+For distance larger than 200kbp:
+
+```{r,message=FALSE}
+pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  group_by(v1v2_diff) %>% 
+  summarize(n = n())
+small_10 = pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  filter(v1v2_diff<=10) %>% 
+  ggplot(aes(v1v2_diff)) +
+  geom_histogram() + 
+  scale_x_continuous(breaks=seq(0, 10, 1)) +
+  xlab("v1v2 difference(0-10)")
+larg_10 = pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  filter(v1v2_diff>10) %>% 
+  ggplot(aes(v1v2_diff)) +
+  geom_histogram() +
+  xlab("v1v2 difference(10+)")
+small_10 + larg_10
+```
+
+### v3v4 region
+
+For distance larger than 150kbp:
+
+```{r,message=FALSE}
+pairAlign_res %>% 
+  group_by(v3v4_diff) %>% 
+  summarize(n = n())
+small_10 = pairAlign_res %>% 
+  filter(v3v4_diff<=10) %>% 
+  ggplot(aes(v3v4_diff)) +
+  geom_histogram() + 
+  scale_x_continuous(breaks=seq(0, 10, 1)) +
+  xlab("v3v4 difference(0-10)")
+larg_10 = pairAlign_res %>% 
+  filter(v3v4_diff>10) %>% 
+  ggplot(aes(v3v4_diff)) +
+  geom_histogram() +
+  xlab("v3v4 difference(10+)")
+small_10 + larg_10
+```
+
+For distance larger than 200kbp:
+
+```{r,message=FALSE}
+pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  group_by(v3v4_diff) %>% 
+  summarize(n = n())
+small_10 = pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  filter(v3v4_diff<=10) %>% 
+  ggplot(aes(v3v4_diff)) +
+  geom_histogram() + 
+  scale_x_continuous(breaks=seq(0, 10, 1)) +
+  xlab("v3v4 difference(0-10)")
+larg_10 = pairAlign_res %>% 
+  filter(distance > 200000) %>% 
+  filter(v3v4_diff>10) %>% 
+  ggplot(aes(v3v4_diff)) +
+  geom_histogram() +
+  xlab("v3v4 difference(10+)")
+small_10 + larg_10
+```
