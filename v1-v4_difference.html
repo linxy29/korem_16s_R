@@ -425,12 +425,19 @@ max_pairAlign_res %&gt;%
 ## 13 GCA_000021145.1 c3-c5   3010277         1         1 v3v4 
 ## 14 GCA_000021145.1 c3-c6   3174942         1         1 v3v4 
 ## 15 GCA_000146265.4 c1-c3    431226         0         0 v1v2</code></pre>
+<pre class="r"><code>write.table(max_pairAlign_res, file = &quot;D:/Codes/korem_16s/Data/max_pairAlign_res.txt&quot;, append = FALSE, quote = FALSE, row.names = FALSE)</code></pre>
 </div>
 <div id="draw-distribution-of-difference" class="section level2">
 <h2>Draw distribution of difference</h2>
 <div id="v1v2-region" class="section level3">
 <h3>v1v2 region</h3>
 <p>For distance larger than 150kbp:</p>
+<pre class="r"><code>pairAlign_res$v1v2_diff %&gt;% summary()</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.000   0.000   1.222   1.000  81.000</code></pre>
+<pre class="r"><code>pairAlign_res$v3v4_diff %&gt;% summary()</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   0.000   0.000   0.000   1.109   1.000 127.000</code></pre>
 <pre class="r"><code>pairAlign_res %&gt;% 
   group_by(v1v2_diff) %&gt;% 
   summarize(n = n())</code></pre>

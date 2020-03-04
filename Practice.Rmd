@@ -1,0 +1,57 @@
+---
+title: "Practice"
+author: "Xinyi Lin"
+date: "2/12/2020"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+split1 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split1.useout", header=FALSE)
+split1_0.3 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split1_0.3.useout", header=FALSE)
+split1_0.8 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split1_0.8.useout", header=FALSE)
+```
+
+```{r}
+split1_0.3 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+
+split1 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+
+split1_0.8 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+```
+
+```{r}
+split2 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split2.useout", header=FALSE)
+split2_0.3 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split2_0.3.useout", header=FALSE)
+split2_0.8 <- read.delim("D:/Codes/korem_16s/Data/ublast_results/split2_0.8.useout", header=FALSE)
+```
+
+```{r}
+split2_0.3 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+
+split2 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+
+split2_0.8 %>% 
+  filter(V3 == 100) %>% 
+  group_by(V1) %>% 
+  summarize(n = n())
+```
+

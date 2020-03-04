@@ -1,0 +1,164 @@
+---
+title: "Classify mapping results"
+author: "Xinyi Lin"
+date: "2/12/2020"
+output: html_document
+---
+
+```{r,message=FALSE}
+library(tidyverse)
+```
+
+## ublast results
+
+```{r,eval=FALSE}
+# !!!Don't run
+map_res <- read.delim("D:/Codes/korem_16s/Data/ublast_results/ublast_res.useout", header=FALSE)
+colnames(map_res) = c("query","target","identity_frac","aln_len","mis_num","opens_num","query_start","query_end","query_len","target_start","target_end","e_value","bit_score")
+filter_res = map_res %>% 
+  filter(identity_frac==100) %>% 
+  arrange(query)
+write.csv(filter_res,"D:/Codes/korem_16s/Data/filtered_map_res.csv", row.names = FALSE)
+```
+
+```{r}
+filtered_map_res <- read.csv("D:/Codes/korem_16s/Data/filtered_map_res.csv")
+filtered_map_res %>% 
+  head()
+```
+
+Different queries map to same target and start at same position.
+
+```{r}
+filtered_map_res %>% 
+  mutate(query = as.character(query)) %>% 
+  group_by(target, target_start) %>% 
+  summarise(n = n()) %>% 
+  filter(n>1)
+```
+
+```{r}
+filtered_map_res %>% 
+  filter(target == "Faecalibacterium prausnitzii|GCF_002586945.1|NZ_CP023819.1|Chromosome: ANONYMOUS|1712573..1714091 +" & target_start==530)
+```
+
+```{r}
+length(unique(filtered_map_res$query))/80538
+```
+
+```{r}
+split_filter_res = filtered_map_res %>% 
+  separate(target, c("target_strain", "target_recordId", "target_refId", "target_Chromosome", "target_other"), "\\|") %>% 
+  separate(target_other, c("target_Wholstart", NA, "target_Wholend", "target_strand"), "([\\..\\ ])") %>% 
+  select(-target_refId, -identity_frac) %>% 
+  arrange(target_recordId)
+```
+
+```{r}
+write.table(unique(split_filter_res$query), file = "D:/Codes/korem_16s/Data/100MapQuery.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+### Multiquery to one target
+
+```{r}
+mulquery_targetID = split_filter_res %>% 
+  group_by(target_recordId) %>% 
+  summarise(mulquery = length(unique(query))>1) %>% 
+  filter(mulquery == "TRUE") %>% 
+  .$target_recordId
+```
+
+```{r}
+mulquery_queryID = split_filter_res %>% 
+  filter(target_recordId %in% mulquery_targetID) %>% 
+  mutate(query = as.character(query)) %>% 
+  .$query
+```
+
+```{r}
+mulquery_res = split_filter_res %>% 
+  filter(query %in% mulquery_queryID)
+```
+
+```{r}
+write.csv(mulquery_res, file = "D:/Codes/korem_16s/Data/mulquery_res.csv",row.names = FALSE)
+```
+
+The first target
+
+```{r}
+mulquery_res %>% 
+  filter(target_recordId == mulquery_targetID[1]) %>% 
+  select(query, target_strain, target_recordId, target_Chromosome, target_start, target_end, target_Wholstart) %>% 
+  mutate(query_Seqstart = as.integer(target_Wholstart)+target_start,  # Query position at whole chromosome
+         query_Seqend = as.integer(target_Wholstart)+target_end) 
+```
+
+The second target
+
+```{r}
+mulquery_res %>% 
+  filter(target_recordId == mulquery_targetID[2]) %>% 
+  select(query, target_Wholstart, target_start, target_end, target_strain, target_recordId, target_Chromosome) %>% 
+  mutate(query_Seqstart = as.integer(target_Wholstart)+target_start,  # Query position at whole chromosome
+         query_Seqend = as.integer(target_Wholstart)+target_end) 
+```
+
+```{r}
+mulquery_res %>% 
+  filter(target_recordId == mulquery_targetID[2]) %>% 
+  .$query %>% 
+  unique() %>% 
+  length()
+mulquery_res %>% 
+  filter(target_recordId == mulquery_targetID[2]) %>% 
+  group_by(target_Wholstart, target_start) %>% 
+  summarise(n = n())
+```
+
+```{r}
+mulquery_res %>% 
+  filter(target_recordId == mulquery_targetID[3]) %>% 
+  select(query, target_Wholstart, target_start, target_end, target_strain, target_recordId, target_Chromosome) %>% 
+  mutate(query_Seqstart = as.integer(target_Wholstart)+target_start,  # Query position at whole chromosome
+         query_Seqend = as.integer(target_Wholstart)+target_end) 
+```
+
+
+### Multitarget to one query
+
+```{r}
+multarget_queryID = split_filter_res %>% 
+  group_by(query) %>% 
+  summarise(multarget = length(unique(target_recordId))>1) %>% 
+  filter(multarget == "TRUE") %>% 
+  mutate(query = as.character(query)) %>% 
+  .$query
+```
+
+```{r}
+split_filter_res %>% 
+  group_by(query, target_recordId) %>% 
+  summarise(n = n())
+```
+
+## usearch results with 100% identity
+
+```{r}
+usearch_res <- read.delim("D:/Codes/korem_16s/Data/usearch/usearch_res.useout", header=FALSE)
+colnames(usearch_res) = c("query","target","identity_frac","aln_len","mis_num","opens_num","query_start","query_end","query_len","target_start","target_end","e_value","bit_score")
+```
+
+```{r}
+length(unique(usearch_res$query))/1421486
+```
+
+## usearch results with 97% identity
+
+```{r}
+usearch_res <- read.delim("D:/Codes/korem_16s/Data/usearch/usearch_res97.useout", header=FALSE)
+colnames(usearch_res) = c("query","target","identity_frac","aln_len","mis_num","opens_num","query_start","query_end","query_len","target_start","target_end","e_value","bit_score")
+usearch_100res = usearch_res %>% 
+  filter(identity_frac==100)
+```
+
