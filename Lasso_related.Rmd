@@ -1,0 +1,84 @@
+---
+title: "Lasso_related"
+author: "Xinyi Lin"
+date: "3/11/2020"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+otuPairs_num <- read.delim("D:/Codes/korem_16s/Data/otuPairs_num.txt")
+```
+
+```{r}
+hist(otuPairs_num$otuPairs_num)
+otuPairs_num %>% 
+  group_by(otuPairs_num) %>% 
+  summarise(n = n())
+```
+
+```{r}
+library(readr)
+P2T_pred_df <- read_csv("D:/Codes/korem_16s/Data/Lasso/P2T_pred_df.csv")
+P2T_true_df <- read_csv("D:/Codes/korem_16s/Data/Lasso/P2T_true_df.csv")
+```
+
+```{r}
+plot(P2T_pred_df$`882`, P2T_true_df$`882`)
+```
+
+```{r}
+for (j in 35:48){
+  pred = P2T_pred_df[,j] %>% 
+    unlist() %>% 
+    as.numeric()
+  true = P2T_true_df[,j] %>% 
+    unlist() %>%
+    as.numeric()
+  P2T_df = data.frame(pred = pred, true = true)
+  P2T_df %>% 
+    ggplot()
+  plot(pred, true, main = colnames(P2T_pred_df[,j]))
+}
+```
+
+```{r}
+for (j in 35:48){
+  pred = P2T_pred_df[,j] %>% 
+    unlist() %>% 
+    as.numeric()
+  true = P2T_true_df[,j] %>% 
+    unlist() %>%
+    as.numeric()
+  P2T_df = data.frame(pred = pred, true = true)
+  plot = P2T_df %>% 
+    filter(pred > 0) %>% 
+    ggplot(aes(pred, true)) +
+    geom_point() + 
+    labs(title = colnames(P2T_pred_df[,j])) +
+    theme(plot.title = element_text(hjust = 0.5))
+  print(plot)
+}
+```
+
+```{r}
+pred = P2T_pred_df[,35] %>% 
+  unlist() %>% 
+  as.numeric()
+true = P2T_true_df[,35] %>% 
+  unlist() %>%
+  as.numeric()
+P2T_df = data.frame(pred = pred, true = true)
+P2T_df %>% 
+  filter(pred > 0) %>% 
+  ggplot(aes(pred, true)) +
+  geom_point() + 
+  labs(title = colnames(P2T_pred_df[,j])) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+

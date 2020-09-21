@@ -55,3 +55,8 @@ split2_0.8 %>%
   summarize(n = n())
 ```
 
+```{r}
+genomes_metadata %>% 
+  filter(SegalLabID %in% c(310, 3001, 1503, 1528, 147, 1236, 1331, 2972))
+```
+

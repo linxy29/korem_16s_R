@@ -1,0 +1,181 @@
+---
+title: "map_results2"
+author: "Xinyi Lin"
+date: "3/9/2020"
+output: html_document
+---
+
+## before OGS table
+
+```{r,message=FALSE}
+library(tidyverse)
+```
+
+## ublast results
+
+```{r,eval=FALSE}
+# !!!Don't run
+map_res <- read.delim("D:/Codes/korem_16s/Data/ublast_results/ublast_res.useout", header=FALSE)
+colnames(map_res) = c("query","target","identity_frac","aln_len","mis_num","opens_num","query_start","query_end","query_len","target_start","target_end","e_value","bit_score")
+filter_res = map_res %>% 
+  filter(identity_frac==100) %>% 
+  arrange(query)
+write.csv(filter_res,"D:/Codes/korem_16s/Data/filtered_map_res.csv", row.names = FALSE)
+```
+
+## Import data
+
+```{r}
+filtered_map_res <- read.csv("D:/Codes/korem_16s/Data/filtered_map_res.csv") %>% 
+  select(-identity_frac, -mis_num, -opens_num)
+filtered_map_res %>% 
+  head()
+```
+
+## Get all GCF that query mapped to 
+
+```{r}
+GCF_mapped = filtered_map_res %>% 
+  separate(target, c("target_strain", "target_recordId", "target_refId", "target_Chromosome", "target_other"), "\\|") 
+```
+
+```{r}
+len = length(unique(GCF_mapped$target_recordId))
+head(GCF_mapped)
+write.table(unique(GCF_mapped$target_recordId)[1:2008], file = "D:/Codes/korem_16s/Data/GCF_mapped1.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(unique(GCF_mapped$target_recordId)[2009:len], file = "D:/Codes/korem_16s/Data/GCF_mapped2.txt", append = FALSE, quote = FALSE, row.names = FALSE, col.names = FALSE)
+```
+
+
+## query map to same position of same target
+
+```{r}
+filtered_map_res %>% 
+  .$query %>% 
+  unique() %>% 
+  length()
+
+filtered_map_res %>% 
+  filter(query_start == 1 & query_end == query_len) %>% 
+  .$query %>% 
+  unique() %>% 
+  length()
+```
+
+targets mapped with more than one otus
+
+```{r}
+target_IDstart_list = 
+  filtered_map_res %>% 
+  mutate(target_IDstart = str_c(target, target_start)) %>% 
+  group_by(target_IDstart) %>% 
+  summarise(n = n()) %>% 
+  filter(n>1) %>% 
+  .$target_IDstart
+```
+
+```{r}
+filtered_map_res %>% 
+  mutate(target_IDstart = str_c(target, target_start)) %>% 
+  filter(target_IDstart %in% target_IDstart_list) %>% 
+  arrange(target, target_start) %>% 
+  select(query, target_IDstart, everything())
+```
+
+```{r}
+map100_res = filtered_map_res %>% 
+  filter(query_start == 1 & query_end == query_len)
+```
+
+```{r}
+filtered_map_res %>% 
+  filter(query == 'RO119812')
+```
+
+```{r}
+map100_res %>% 
+  filter(query == 'RO119812')
+```
+
+```{r}
+dup_target = map100_res %>% 
+  group_by(target, target_start) %>% 
+  summarize(n = n()) %>% 
+  filter(n > 1)
+
+head(dup_target)
+```
+
+```{r}
+write.csv(map100_res, 'D:/Codes/korem_16s/Data/method1/map100_res.csv', row.names = FALSE)
+write.csv(dup_target, 'D:/Codes/korem_16s/Data/method1/dup_target.csv', row.names = FALSE)
+```
+
+```{r}
+mapFlx_res = filtered_map_res %>% 
+  filter(query_start <= 3 & query_len - query_end <= 3)
+
+dupFlx_target = mapFlx_res %>% 
+  group_by(target, target_start) %>% 
+  summarize(n = n()) %>% 
+  filter(n > 1)
+
+write.csv(mapFlx_res, 'D:/Codes/korem_16s/Data/method1/mapFlx_res.csv', row.names = FALSE)
+write.csv(dupFlx_target, 'D:/Codes/korem_16s/Data/method1/dupFlx_target.csv', row.names = FALSE)
+```
+
+```{r}
+filtered_map_res %>% 
+  filter(query %in% c('RO231971', 'RO11225'))
+```
+
+```{r}
+map100_res %>% 
+  filter(target == "[Eubacterium] eligens ATCC 27750|GCF_000146185.1|NC_012778.1|Chromosome: ANONYMOUS|15553..17092 +" & target_start == 545)
+```
+
+```{r}
+map100_res %>% 
+  filter(target == "[Eubacterium] eligens ATCC 27750|GCF_000146185.1|NC_012778.1|Chromosome: ANONYMOUS|2029850..2031389 -" & target_start == 783)
+```
+
+```{r}
+map100_res %>% 
+  filter(query %in% c("RO52381", "RO62"))
+```
+
+## Method 1: 100% matched otus
+
+First, use those with 100% matched including ending and start
+
+```{r}
+perfect_map_res = filtered_map_res %>% 
+  filter(query_start == 1 & query_end == query_len) %>% 
+  mutate(targetWhole = target) %>%    # targetWhole is copy from target and contains ID, Chromosome and startpoint
+  separate(target, c("target_strain", "target_recordId", "target_refId", "target_Chromosome", "target_other"), "\\|") %>% 
+  separate(target_other, c("target_Wholstart", NA, "target_Wholend", "target_strand"), "([\\..\\ ])") %>% 
+  select(-target_refId) %>% 
+  arrange(target_recordId)
+
+perfect_map_res %>% 
+  head()
+```
+
+```{r}
+## import replaced data
+map100_replace_res <- read.csv("D:/Codes/korem_16s/Data/method1/map100_replace_res.csv") %>% 
+  mutate(targetWhole = target) %>%    # targetWhole is copy from target and contains ID, Chromosome and startpoint
+  separate(target, c("target_strain", "target_recordId", "target_refId", "target_Chromosome", "target_other"), "\\|") %>% 
+  separate(target_other, c("target_Wholstart", NA, "target_Wholend", "target_strand"), "([\\..\\ ])") %>% 
+  select(-target_refId) %>% 
+  arrange(target_recordId)
+```
+
+```{r}
+map100_replace_res <- read.csv("D:/Codes/korem_16s/Data/method1/map100_replace_res.csv")
+```
+
+```{r}
+
+```
+

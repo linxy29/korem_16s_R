@@ -1,0 +1,54 @@
+---
+title: "method1-OGStable"
+author: "Xinyi Lin"
+date: "4/1/2020"
+output: html_document
+---
+
+```{r,message=FALSE}
+library(tidyverse)
+```
+
+## Import data
+
+```{r}
+filtered_map_res <- read.csv("D:/Codes/korem_16s/Data/filtered_map_res.csv") %>% 
+  select(-identity_frac, -mis_num, -opens_num)
+filtered_map_res %>% 
+  head()
+```
+
+## get similarity
+
+```{r}
+mapRate_res = filtered_map_res %>% 
+  mutate(mapRate = (query_end - query_start + 1)/query_len) %>% 
+  separate(target, c("target_strain", "target_recordId", "target_refId", "target_Chromosome", "target_other"), "\\|") %>% 
+  separate(target_other, c("target_Wholstart", NA, "target_Wholend", "target_strand"), "([\\..\\ ])") %>% 
+  mutate(map_seqStart = as.integer(target_Wholstart) + target_start) %>% 
+  #select(query, map_seqStart, target_strain, mapRate) %>% 
+  select(query, map_seqStart, target_strain, target_recordId, mapRate)
+
+head(mapRate_res, 100)
+```
+
+```{r}
+mapRate97_res = mapRate_res %>% 
+  filter(mapRate >= 0.97) %>% 
+  select(-mapRate)
+```
+
+```{r}
+write.csv(mapRate97_res, 'D:/Codes/korem_16s/Data/method1/mapRate97_res.csv', row.names = FALSE)
+```
+
+```{r}
+mapRate100_res = mapRate_res %>% 
+  filter(mapRate >= 1) %>% 
+  select(-mapRate)
+```
+
+```{r}
+write.csv(mapRate100_res, 'D:/Codes/korem_16s/Data/method1/mapRate100_res.csv', row.names = FALSE)
+```
+

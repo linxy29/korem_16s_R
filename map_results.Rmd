@@ -21,6 +21,8 @@ filter_res = map_res %>%
 write.csv(filter_res,"D:/Codes/korem_16s/Data/filtered_map_res.csv", row.names = FALSE)
 ```
 
+## select variables that is needed
+
 ```{r}
 filtered_map_res <- read.csv("D:/Codes/korem_16s/Data/filtered_map_res.csv")
 filtered_map_res %>% 
